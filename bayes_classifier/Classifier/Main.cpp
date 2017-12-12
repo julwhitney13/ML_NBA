@@ -5,34 +5,7 @@
 #include "team.h"
 #include "game.h"
 #include "naiveBayes.h"
-
-void combineStats(team *league1, team *league2, int size)
-{	
-	for (int i = 0; i < 30; i++) {
-		int count = 0;
-		for (int j = 0; j < 30; j++) {
-			if (league2[j].name == league1[i].name)
-				for (int k = 0; k < size; k++) {
-					if (league1[i].stats[k] <= 0) {
-						league1[i].stats[k] = league2[j].stats[count];
-						count++;
-					}
-				}
-		}
-	}
-}
-
-void fillStats(std::string file, team *league) {
-	std::ifstream instream;
-	std::string line;
-	instream.open(file);
-	std::getline(instream, line);
-	for (int i = 0; i < 30; i++) {
-		std::getline(instream, line);
-		league[i].fillTeam(line);
-	}
-	instream.close();
-}
+#include "league.h"
 
 void fillGames(std::string file, game *games) {
 	std::ifstream instream;
@@ -49,48 +22,53 @@ void fillGames(std::string file, game *games) {
 
 int main()
 {
-	team league[30];
-	team leagueOpp[30];
-	team leagueMisc[30];
+	league league1;
+	league league1Opp;
+	league league1Misc;
 	game games[2000];
-	//fillStats("TeamStats_16-17.csv", league);
-	//fillStats("OpponentStats_16-17.csv", leagueOpp);
-	fillStats("MiscStats_16-17.csv", leagueMisc);
-	//combineStats(league, leagueOpp, sizeof(league[0].stats)/sizeof(float));
-	//combineStats(league, leagueMisc, sizeof(league[0].stats) / sizeof(float));
+	league1.fillLeague("TeamStats_14-15.csv");
+	league1Opp.fillLeague("OpponentStats_14-15.csv");
+	league1Misc.fillLeague("MiscStats_14-15.csv");
+	league1.combineStats(league1Opp);
+	league1.combineStats(league1Misc);
+	league1.calculateAvg();
+	league1.calculateStdDev();
 
-	fillGames("GameResults_16-17.csv", games);
-	naiveBayes b(sizeof(league[0].stats) / sizeof(float));
-	b.train(leagueMisc, games, sizeof(league[0].stats) / sizeof(float));
+	fillGames("GameResults_14-15.csv", games);
+	naiveBayes b(100);
+	b.train(league1, games, 100);
 	
-	team league2[30];
-	team league2Opp[30];
-	team league2Misc[30];
-	//fillStats("TeamStats_15-16.csv", league2);
-	//fillStats("OpponentStats_15-16.csv", league2Opp);
-	fillStats("MiscStats_14-15.csv", league2Misc);
-	//combineStats(league2, league2Opp, sizeof(league[0].stats) / sizeof(float));
-	//combineStats(league2, league2Misc, sizeof(league[0].stats) / sizeof(float));
+	league league2;
+	league league2Opp;
+	league league2Misc;
+	league2.fillLeague("TeamStats_15-16.csv");
+	league2Opp.fillLeague("OpponentStats_15-16.csv");
+	league2Misc.fillLeague("MiscStats_15-16.csv");
+	league2.combineStats(league2Opp);
+	league2.combineStats(league2Misc);
+	league2.calculateAvg();
+	league2.calculateStdDev();
 
 	game games2[2000];
-	fillGames("GameResults_14-15.csv", games2);
-	b.train(league2Misc, games2, sizeof(league[0].stats) / sizeof(float));
-	//b.finalizeTraining(sizeof(league[0].stats) / sizeof(float));
+	fillGames("GameResults_15-16.csv", games2);
+	b.train(league2, games2, 100);
 
-	team league3[30];
-	team league3Opp[30];
-	team league3Misc[30];
-	//fillStats("TeamStats_14-15.csv", league3);
-	//fillStats("OpponentStats_14-15.csv", league3Opp);
-	fillStats("MiscStats_15-16.csv", league3Misc);
-	//combineStats(league3, league3Opp, sizeof(league[0].stats) / sizeof(float));
-	//combineStats(league3, league3Misc, sizeof(league[0].stats) / sizeof(float));
+	league league3;
+	league league3Opp;
+	league league3Misc;
+	league3.fillLeague("TeamStats_16-17.csv");
+	league3Opp.fillLeague("OpponentStats_16-17.csv");
+	league3Misc.fillLeague("MiscStats_16-17.csv");
+	league3.combineStats(league3Opp);
+	league3.combineStats(league3Misc);
+	league3.calculateAvg();
+	league3.calculateStdDev();
 
 	game games3[2000];
-	fillGames("GameResults_15-16.csv", games3);
+	fillGames("GameResults_16-17.csv", games3);
 	//b.train(league3, games3, sizeof(league[0].stats) / sizeof(float));
-	b.finalizeTraining(sizeof(league[0].stats) / sizeof(float));
-	b.validate(league3Misc, games3, sizeof(league[0].stats) / sizeof(float));
+	b.finalizeTraining(100);
+	b.validate(league3, games3, 100);
 	//b.findBest(league3, games3);
 
 	/*team league4[30];

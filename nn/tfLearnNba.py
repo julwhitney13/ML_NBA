@@ -1,8 +1,6 @@
 from __future__ import print_function
-
 import numpy as np
 import tflearn
-# Load CSV file, indicate that the first column represents labels
 from tflearn.data_utils import load_csv
 
 team_dict = {
@@ -38,9 +36,9 @@ team_dict = {
     'Portland Trail Blazers': 30
 }
 
-def preprocess():
-    team_stats, _ = load_csv("TeamStats_15-16.csv")
-    opponent_stats, _ = load_csv("OpponentStats_15-16.csv")
+def preprocess(team_file, opponent_file):
+    team_stats, _ = load_csv(team_file)
+    opponent_stats, _ = load_csv(opponent_file)
 
     new_team = {}
     for l in team_stats:
@@ -54,49 +52,52 @@ def preprocess():
             l[0] = team_dict.get(l[0])
             new_opponent[l[0]] = l
 
-    # print(new_team)
-    # print(new_opponent)
-    combined_stats = []
-    for i in range(1, 31):
-        combined_stats.append(new_team.get(i) + new_opponent.get(31-i))
+    return new_team, new_opponent
 
-    return combined_stats
+def validation_stats(game_file="GameResults_15-16.csv", team_file="TeamStats_15-16.csv", opponent_file="OpponentStats_15-16.csv"):
+    team_stats, opponent_stats = preprocess(team_file, opponent_file)
 
-def validate():
     results = []
-    game_results, _ = load_csv("GameResults_15-16.csv")
+    game_results, labels = load_csv(game_file, target_column=0, categorical_labels=True, n_classes=2)
     for l in game_results:
-        l[1] = team_dict.get(l[1])
-        l[3] = team_dict.get(l[1])
+        team_num = team_dict.get(l[0])
+        opponent_num  = team_dict.get(l[1])
+        new_l = team_stats.get(team_num) + opponent_stats.get(opponent_num)
+        results.append(new_l)
+    return results, labels
 
+year1516_data, year1516_labels = validation_stats()
+year1617_data, year1617_labels = validation_stats("GameResults_16-17.csv", "TeamStats_16-17.csv", "OpponentStats_16-17.csv")
+year1415_data, year1415_labels = load_csv('Game1415.csv', target_column=0, categorical_labels=True, n_classes=2)
 
-data, labels = load_csv('Game1415.csv', target_column=0, categorical_labels=True, n_classes=2)
+data = np.concatenate((year1415_data, year1516_data))
+labels = np.concatenate((year1415_labels, year1516_labels))
+val_results = year1617_data
+val_labels = year1617_labels
 
 # Build neural network
 net = tflearn.input_data(shape=[None, len(data[0])])
-fc1 = tflearn.fully_connected(net, 32)
-fc2 = tflearn.fully_connected(fc1, 32)
+fc1 = tflearn.fully_connected(net, 32, trainable=True)
+fc2 = tflearn.fully_connected(fc1, 32, trainable=True)
 fc3 = tflearn.fully_connected(fc2, 2, activation='softmax')
-net = tflearn.regression(fc3)
+net = tflearn.regression(fc3, optimizer='adam')
 
 # Define model
-model = tflearn.DNN(net)
+model = tflearn.DNN(net, tensorboard_verbose=3)
 
-model.get_weights(fc3.W)
-print(len(model.get_weights(fc3.W)))
-# Start training (apply gradient descent algorithm)
-model.fit(data, labels, n_epoch=10, batch_size=16, show_metric=True)
+# model.get_weights(fc2.W)
+# model.set_weights(fc2.W, np.random.rand(32, 32))
 
-# Let's create some data for DiCaprio and Winslet
-validate = preprocess()
+model.fit(data, labels, n_epoch=30, batch_size=16, show_metric=True, validation_set=(val_results, val_labels), validation_batch_size=16)
 
-# Predict surviving chances (class 1 results)
-pred = model.predict(validate)
-i = 0
-for l in validate:
-    print(l[0], "vs", l[13], pred[i][1])
-    i = i + 1
+# validate, _ = preprocess()
 
+# pred = model.predict(validate)
+# i = 0
+# for l in validate:
+#     print(l[0], "vs", l[13], pred[i][1])
+#     i = i + 1
+#
 # print("", pred[0][1])
 # print("cavs v bulls:", pred[1][1])
 # print("pel v warriors: ", pred[2][1])

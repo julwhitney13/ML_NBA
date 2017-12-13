@@ -41,31 +41,31 @@ int main()
 	league league2;
 	league league2Opp;
 	league league2Misc;
-	league2.fillLeague("TeamStats_15-16.csv");
-	league2Opp.fillLeague("OpponentStats_15-16.csv");
-	league2Misc.fillLeague("MiscStats_15-16.csv");
+	league2.fillLeague("TeamStats_16-17.csv");
+	league2Opp.fillLeague("OpponentStats_16-17.csv");
+	league2Misc.fillLeague("MiscStats_16-17.csv");
 	league2.combineStats(league2Opp);
 	league2.combineStats(league2Misc);
 	league2.calculateAvg();
 	league2.calculateStdDev();
 
 	game games2[2000];
-	fillGames("GameResults_15-16.csv", games2);
+	fillGames("GameResults_16-17.csv", games2);
 	b.train(league2, games2, 100);
 
 	league league3;
 	league league3Opp;
 	league league3Misc;
-	league3.fillLeague("TeamStats_16-17.csv");
-	league3Opp.fillLeague("OpponentStats_16-17.csv");
-	league3Misc.fillLeague("MiscStats_16-17.csv");
+	league3.fillLeague("TeamStats_15-16.csv");
+	league3Opp.fillLeague("OpponentStats_15-16.csv");
+	league3Misc.fillLeague("MiscStats_15-16.csv");
 	league3.combineStats(league3Opp);
 	league3.combineStats(league3Misc);
 	league3.calculateAvg();
 	league3.calculateStdDev();
 
 	game games3[2000];
-	fillGames("GameResults_16-17.csv", games3);
+	fillGames("GameResults_15-16.csv", games3);
 	//b.train(league3, games3, sizeof(league[0].stats) / sizeof(float));
 	b.finalizeTraining(100);
 	b.validate(league3, games3, 100);

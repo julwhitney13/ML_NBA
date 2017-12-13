@@ -12,7 +12,6 @@ public:
 	double yesAboveStats[100];
 	double yesBelowStast[100];
 	double yesNegStats[100];
-	double avgDifference[100];
 	double noPosStats[100];
 	double noAboveStats[100];
 	double noBelowStats[100];

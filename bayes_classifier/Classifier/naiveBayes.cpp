@@ -102,6 +102,7 @@ void naiveBayes::validate(league league1, game *games, int size) {
 	}
 	output << "Correct: " << right << std::endl;
 	output << "Incorrect: " << wrong << std::endl;
+	output.close();
 }
 
 bool naiveBayes::yesNO(league league1, int size, int home, int away) {

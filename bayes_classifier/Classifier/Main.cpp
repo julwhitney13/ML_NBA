@@ -56,16 +56,16 @@ int main()
 	league league3;
 	league league3Opp;
 	league league3Misc;
-	league3.fillLeague("TeamStats_15-16.csv");
-	league3Opp.fillLeague("OpponentStats_15-16.csv");
-	league3Misc.fillLeague("MiscStats_15-16.csv");
+	league3.fillLeague("TeamStats_16-17.csv");
+	league3Opp.fillLeague("OpponentStats_16-17.csv");
+	league3Misc.fillLeague("MiscStats_16-17.csv");
 	league3.combineStats(league3Opp);
 	league3.combineStats(league3Misc);
 	league3.calculateAvg();
 	league3.calculateStdDev();
 
 	game games3[2000];
-	fillGames("GameResults_15-16.csv", games3);
+	fillGames("GameResults_16-17.csv", games3);
 	//b.train(league3, games3, sizeof(league[0].stats) / sizeof(float));
 	b.finalizeTraining(100);
 	b.validate(league3, games3, 100);

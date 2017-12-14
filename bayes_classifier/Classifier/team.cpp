@@ -14,7 +14,7 @@ void team::fillTeam(std::string info) {
 	name = info.substr(index + 1, end - index - 1);
 	if (name.back() == '*')
 		name = name.substr(0, name.size() - 1);
-	index = info.find(',', end + 1);
+	index = info.find(',', end);
 	std::string line;
 	for (int i = 0; i < sizeof(stats)/sizeof(float); i++) {
 		end = info.find(',', index + 1);

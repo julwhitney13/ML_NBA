@@ -1,5 +1,6 @@
 #include "team.h"
 #include "game.h"
+#include "league.h"
 #include <vector>
 #include<cmath>
 #include<iostream>
@@ -11,7 +12,6 @@ public:
 	double yesAboveStats[100];
 	double yesBelowStast[100];
 	double yesNegStats[100];
-	double avgDifference[100];
 	double noPosStats[100];
 	double noAboveStats[100];
 	double noBelowStats[100];
@@ -20,11 +20,11 @@ public:
 	double pYes, pNo;
 
 	naiveBayes(int size);
-	void train(team *, game *, int size);
-	void validate(team *, game *, int size);
+	void train(league, game *, int size);
+	void validate(league, game *, int size);
 	void finalizeTraining(int size);
-	bool predict(team *, int size);
-	void findBest(team *, game *);
-	void findTeam(std::string homeName, std::string awayName, team *league, int &home, int &away);
-	bool yesNO(team *league, int size, int homeStats, int awayStats);
+	bool predict(league, int size);
+	void findBest(league, game *);
+	void findTeam(std::string homeName, std::string awayName, league, int &home, int &away);
+	bool yesNO(league, int size, int homeStats, int awayStats);
 };

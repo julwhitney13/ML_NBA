@@ -6,7 +6,6 @@ naiveBayes::naiveBayes(int size) {
 	for (int k = 0; k < size; k++) {
 		yesPosStats[k] = 0;
 		noPosStats[k] = 0;
-		avgDifference[k] = 0;
 		yesAboveStats[k] = 0;
 		noAboveStats[k] = 0;
 		noBelowStats[k] = 0;
@@ -26,49 +25,36 @@ void naiveBayes::finalizeTraining(int size) {
 		noNegStats[k] = noNegStats[k] / noCount;
 		noBelowStats[k] = noBelowStats[k] / noCount;
 		noAboveStats[k] = noAboveStats[k] / noCount;
-		avgDifference[k] = avgDifference[k] / (yesCount + noCount);
 	}
 }
 
-void naiveBayes::findTeam(std::string homeName, std::string awayName, team *league, int &home, int &away) {
+void naiveBayes::findTeam(std::string homeName, std::string awayName, league league1, int &home, int &away) {
 	for (int j = 0; j < 30; j++) {
-		if (league[j].name == homeName)
+		if (league1.teams[j].name == homeName)
 			home = j;
-		else if (league[j].name == awayName)
+		else if (league1.teams[j].name == awayName)
 			away = j;
 	}
 }
 
-void naiveBayes::train(team *league, game *games, int size) {
+void naiveBayes::train(league league1, game *games, int size) {
 	int homeStats;
 	int awayStats;
-	int count = 0;
-	float tempAvgDiff[2000];
 	for (int i = 0; i < 2000; i++) {
 		if (games[i].awayTeam == "")
 			break;
-		findTeam(games[i].homeTeam, games[i].awayTeam, league, homeStats, awayStats);
-		count++;
-		for (int k = 0; k < size; k++) {
-			avgDifference[k] += abs(league[homeStats].stats[k] - league[awayStats].stats[k]);
-		}
-	}
-	for (int i = 0; i < 2000; i++) {
-		tempAvgDiff[i] = avgDifference[i] / (count + yesCount + noCount);
-	}
-	for (int i = 0; i < 2000; i++) {
-		if (games[i].awayTeam == "")
-			break;
-		findTeam(games[i].homeTeam, games[i].awayTeam, league, homeStats, awayStats);
+		findTeam(games[i].homeTeam, games[i].awayTeam, league1, homeStats, awayStats);
 		if (games[i].winner) {
 			yesCount++;
 			for (int k = 0; k < size; k++) {
-				if (league[homeStats].stats[k] - league[awayStats].stats[k] > tempAvgDiff[k])
+				if (league1.teams[homeStats].stats[k] - league1.teams[awayStats].stats[k] > league1.deviationFactor*league1.standardDev.stats[k])
 					yesAboveStats[k]++;
-				else if (league[homeStats].stats[k] - league[awayStats].stats[k] > 0)
+				else if (league1.teams[homeStats].stats[k] - league1.teams[awayStats].stats[k] > 0)
 					yesPosStats[k]++;
-				else if (league[homeStats].stats[k] - league[awayStats].stats[k] < -1 * tempAvgDiff[k])
+				else if (league1.teams[homeStats].stats[k] - league1.teams[awayStats].stats[k] < -league1.deviationFactor * league1.standardDev.stats[k])
 					yesBelowStast[k]++;
+				else if (league1.teams[homeStats].stats[k] - league1.teams[awayStats].stats[k] == 0)
+					continue;
 				else
 					yesNegStats[k]++;
 			}
@@ -76,12 +62,14 @@ void naiveBayes::train(team *league, game *games, int size) {
 		else {
 			noCount++;
 			for (int k = 0; k < size; k++) {
-				if (league[awayStats].stats[k] - league[homeStats].stats[k] > tempAvgDiff[k])
+				if (league1.teams[awayStats].stats[k] - league1.teams[homeStats].stats[k] > league1.deviationFactor*league1.standardDev.stats[k])
 					noAboveStats[k]++;
-				else if (league[awayStats].stats[k] - league[homeStats].stats[k] > 0)
+				else if (league1.teams[awayStats].stats[k] - league1.teams[homeStats].stats[k] > 0)
 					noPosStats[k]++;
-				else if (league[awayStats].stats[k] - league[homeStats].stats[k] < -1 * tempAvgDiff[k])
+				else if (league1.teams[awayStats].stats[k] - league1.teams[homeStats].stats[k] < -league1.deviationFactor * league1.standardDev.stats[k])
 					noBelowStats[k]++;
+				else if (league1.teams[homeStats].stats[k] - league1.teams[awayStats].stats[k] == 0)
+					continue;
 				else
 					noNegStats[k]++;
 			}
@@ -92,43 +80,56 @@ void naiveBayes::train(team *league, game *games, int size) {
 	pNo = 1 - pYes;
 }
 
-void naiveBayes::validate(team *league, game *games, int size) {
+void naiveBayes::validate(league league1, game *games, int size) {
 	int homeStats;
 	int awayStats;
+	std::ofstream output;
+	output.open("predictions.csv");
 	int right = 0, wrong = 0;
 	for (int i = 0; i < 2000; i++) {
 		if (games[i].awayTeam == "")
 			break;
-		findTeam(games[i].homeTeam, games[i].awayTeam, league, homeStats, awayStats);
-		bool yes = yesNO(league, size, homeStats, awayStats);
-		if ((games[i].winner && yes) || (!games[i].winner && !yes))
-			right++;
+		findTeam(games[i].homeTeam, games[i].awayTeam, league1, homeStats, awayStats);
+		bool yes = yesNO(league1, size, homeStats, awayStats);
+		if (yes) 
+			output << true << std::endl;
 		else
+			output << false << std::endl;
+		if ((games[i].winner && yes) || (!games[i].winner && !yes)) 
+			right++;
+		else 
 			wrong++;
 	}
+	output << "Correct: " << right << std::endl;
+	output << "Incorrect: " << wrong << std::endl;
+	output.close();
 }
 
-bool naiveBayes::yesNO(team *league, int size, int home, int away) {
+bool naiveBayes::yesNO(league league1, int size, int home, int away) {
 	double probYes = 1, probNo = 1;
 	for (int j = 0; j < size; j++) {
-		if (league[home].stats[j] - league[away].stats[j] > avgDifference[j]) {
+		if (league1.teams[home].stats[j] < 0)
+			continue;
+		if (league1.teams[home].stats[j] - league1.teams[away].stats[j] > league1.deviationFactor*league1.standardDev.stats[j]) {
 			if (yesAboveStats[j] > 0)
 				probYes = probYes * yesAboveStats[j];
 			if (noBelowStats[j] > 0)
 				probNo = probNo * noBelowStats[j];
 		}
-		else if (league[away].stats[j] - league[home].stats[j] > avgDifference[j]) {
+		else if (league1.teams[away].stats[j] - league1.teams[home].stats[j] > league1.deviationFactor*league1.standardDev.stats[j]) {
 			if (yesBelowStast[j] > 0)
 				probYes = probYes * yesBelowStast[j];
 			if (noAboveStats[j] > 0)
 				probNo = probNo * noAboveStats[j];
 		}
-		else if (league[home].stats[j] - league[away].stats[j] > 0) {
+		else if (league1.teams[home].stats[j] - league1.teams[away].stats[j] > 0) {
 			if (yesPosStats[j] > 0)
 				probYes = probYes * yesPosStats[j];
 			if (noNegStats[j] > 0)
 				probNo = probNo * noNegStats[j];
 		}
+		else if (league1.teams[home].stats[j] - league1.teams[away].stats[j] == 0)
+			continue;
 		else {
 			if (yesNegStats[j] > 0)
 				probYes = probYes * yesNegStats[j];
@@ -146,7 +147,7 @@ bool naiveBayes::yesNO(team *league, int size, int home, int away) {
 		return false;
 }
 
-bool naiveBayes::predict(team *league, int size) {
+bool naiveBayes::predict(league league1, int size) {
 	float probYes = 1, probNo = 1;
 	int home, away;
 	std::string homeTeam;
@@ -155,13 +156,13 @@ bool naiveBayes::predict(team *league, int size) {
 	std::getline (std::cin, homeTeam);
 	std::cout << "Enter Away Team: ";
 	std::getline (std::cin, awayTeam); 
-	findTeam(homeTeam, awayTeam, league, home, away);
-	if (yesNO(league, size, home, away))
+	findTeam(homeTeam, awayTeam, league1, home, away);
+	if (yesNO(league1, size, home, away))
 		return true;
 	else return false;
 }
 
-void naiveBayes::findBest(team *league, game* games) {
+void naiveBayes::findBest(league league1, game* games) {
 	float statPercent[100];
 	float right, wrong;
 	for (int i = 0; i < 100; i++) {
@@ -171,9 +172,9 @@ void naiveBayes::findBest(team *league, game* games) {
 		for (int j = 0; j < 2000; j++) {
 			if (games[j].awayTeam == "")
 				break;
-			findTeam(games[j].homeTeam, games[j].awayTeam, league, homeStats, awayStats);
-			if ((games[j].winner && league[homeStats].stats[i] > league[awayStats].stats[i]) 
-				|| (!games[j].winner && league[awayStats].stats[i] > league[homeStats].stats[i]))
+			findTeam(games[j].homeTeam, games[j].awayTeam, league1, homeStats, awayStats);
+			if ((games[j].winner && league1.teams[homeStats].stats[i] > league1.teams[awayStats].stats[i]) 
+				|| (!games[j].winner && league1.teams[awayStats].stats[i] > league1.teams[homeStats].stats[i]))
 				right++;
 			else
 				wrong++;
